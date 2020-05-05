@@ -22,8 +22,41 @@
   <link href="{% static 'css/sb-admin-2.min.css' %}" rel="stylesheet">
 
 </head>
-
-<body id="page-top">
+<script>
+var latVal={{curRaw.lat}},lonVal={{curRaw.lon}};
+var cbit = {lat:17.3920,lng:78.3194};
+function worker() {
+  $.ajax({
+    url: '/info/{{bus.bno}}', 
+	type: 'GET',
+    success: function(data,textStatus,request) {
+	  latVal=parseFloat(data.lat);
+	  lonVal=parseFloat(data.lon);
+	  var pos={lat:latVal,lng:lonVal};
+	  var request = {
+		origin: pos,
+		destination: cbit,
+		travelMode: google.maps.TravelMode.DRIVING
+		};
+		directionsService.route(request, function (response, status) {
+		console.log(status);
+		if (status == 'OK') {
+			directionsDisplay.setDirections(response);
+		}
+		});
+	  var latlng = new google.maps.LatLng(latVal, lonVal);
+	  marker.setPosition(latlng);
+	  marker.setTitle("Latitude:"+latVal+" | Longitude:"+lonVal);
+	  //curRaw.update({'lat': latVal});
+    },
+    complete: function() {
+      // Schedule the next request when the current one's complete
+      setTimeout(worker, 5000);
+    }
+  });
+}
+</script>
+<body id="page-top" onload="worker();">
 
   <!-- Page Wrapper -->
   <div id="wrapper">
@@ -281,8 +314,10 @@
                 <div id="map" style="width: auto; height: 500px;"></div>
                 <script>
                 // Initialize and add the map
+				var position;
+				var marker;var directionsDisplay,directionsService;
                 function initMap() {
-                    var cbit = {lat:17.3920,lng:78.3194}
+                    var cbit = {lat:17.3920,lng:78.3194};
                     var map = new google.maps.Map(document.getElementById('map'), {
                     zoom: 11,
                     center: cbit
@@ -298,8 +333,9 @@
                         aInfoWindow.open(map, aMarker);
                     });
                     }
-                    var lat = parseFloat('{{bus.lat}}');
-                    var lng = parseFloat('{{bus.lon}}');
+					var bno={{bno}};
+					var lat=parseFloat(latVal);
+					var lng=parseFloat(lonVal);
                     var pos={lat:lat ,lng:lng};
                     var k='{{bus.bno}}';
                     marker = new google.maps.Marker({
@@ -311,8 +347,8 @@
                     var infowindow = new google.maps.InfoWindow({
                     content: '<p>Location:' + marker.getPosition() + '</p>'
                     });
-                    var directionsDisplay = new google.maps.DirectionsRenderer({suppressMarkers: true});
-                    var directionsService = new google.maps.DirectionsService();
+                    directionsDisplay = new google.maps.DirectionsRenderer({suppressMarkers: true});
+                    directionsService = new google.maps.DirectionsService();
                     directionsDisplay.setMap(map);
                     var request = {
                         origin: pos,
